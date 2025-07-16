@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <title>進貨單辨識工具</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    input, button, table { margin: 0.5em 0; width: 100%; max-width: 800px; }
+    label { font-weight: bold; display: block; margin-top: 1em; }
+    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
+    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
+    #log { height: 150px; overflow-y: auto; background: #f0f0f0; padding: 1em; border: 1px solid #ccc; }
+  </style>
+</head>
+<body>
+  <h1>進貨單辨識工具 (ChatGPT + Vercel)</h1>
+
+  <label>選擇圖片：</label>
+  <input type="file" id="image-input" accept="image/*" />
+  <button onclick="upload()">辨識圖片</button>
+
+  <div id="log">等待操作...</div>
+
+  <table id="result-table">
+    <thead>
+      <tr><th>品號</th><th>品名</th><th>單位</th><th>單價</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    async function upload() {
+      const input = document.getElementById("image-input");
+      if (!input.files[0]) return alert("請選擇圖片");
+
+      const log = document.getElementById("log");
+      log.innerText = "📤 上傳中...";
+
+      const formData = new FormData();
+      formData.append("image", input.files[0]);
+
+      const res = await fetch("/api/gpt-vision", { method: "POST", body: formData });
+      const result = await res.json();
+
+      log.innerText = "✅ 辨識完成";
+
+      const tbody = document.querySelector("#result-table tbody");
+      tbody.innerHTML = "";
+      for (const row of result.items) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${row.code}</td><td>${row.name}</td><td>${row.unit}</td><td>${row.price}</td>`;
+        tbody.appendChild(tr);
+      }
+    }
+  </script>
+</body>
+</html>
