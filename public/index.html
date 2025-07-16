@@ -3,55 +3,38 @@
 <head>
   <meta charset="UTF-8" />
   <title>進貨單辨識工具</title>
-  <style>
-    body { font-family: sans-serif; padding: 2em; }
-    input, button, table { margin: 0.5em 0; width: 100%; max-width: 800px; }
-    label { font-weight: bold; display: block; margin-top: 1em; }
-    table { border-collapse: collapse; width: 100%; margin-top: 1em; }
-    th, td { border: 1px solid #ccc; padding: 6px; text-align: left; }
-    #log { height: 150px; overflow-y: auto; background: #f0f0f0; padding: 1em; border: 1px solid #ccc; }
-  </style>
 </head>
 <body>
-  <h1>進貨單辨識工具 (ChatGPT + Vercel)</h1>
-
-  <label>選擇圖片：</label>
-  <input type="file" id="image-input" accept="image/*" />
-  <button onclick="upload()">辨識圖片</button>
-
-  <div id="log">等待操作...</div>
-
-  <table id="result-table">
-    <thead>
-      <tr><th>品號</th><th>品名</th><th>單位</th><th>單價</th></tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+  <h2>進貨單辨識 + 產出商品主檔</h2>
+  <form id="upload-form" enctype="multipart/form-data">
+    <label>廠商名稱：<input type="text" name="vendor" required /></label><br>
+    <label>選擇進貨單圖片：<input type="file" name="image" accept="image/*" required /></label><br>
+    <label>上傳商品資料_ALL.xlsx：<input type="file" name="excel" accept=".xlsx" required /></label><br>
+    <button type="submit">開始辨識與匯出</button>
+  </form>
+  <div id="status"></div>
 
   <script>
-    async function upload() {
-      const input = document.getElementById("image-input");
-      if (!input.files[0]) return alert("請選擇圖片");
-
-      const log = document.getElementById("log");
-      log.innerText = "📤 上傳中...";
-
-      const formData = new FormData();
-      formData.append("image", input.files[0]);
-
+    document.getElementById("upload-form").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      document.getElementById("status").innerText = "⏳ 上傳中...";
       const res = await fetch("/api/gpt-vision", { method: "POST", body: formData });
-      const result = await res.json();
-
-      log.innerText = "✅ 辨識完成";
-
-      const tbody = document.querySelector("#result-table tbody");
-      tbody.innerHTML = "";
-      for (const row of result.items) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${row.code}</td><td>${row.name}</td><td>${row.unit}</td><td>${row.price}</td>`;
-        tbody.appendChild(tr);
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "商品匯入.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        document.getElementById("status").innerText = "✅ 完成並下載 Excel";
+      } else {
+        const result = await res.json();
+        document.getElementById("status").innerText = "❌ 錯誤：" + result.error;
       }
-    }
+    });
   </script>
 </body>
 </html>
