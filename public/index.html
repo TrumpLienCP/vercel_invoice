@@ -1,8 +1,13 @@
+
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8" />
   <title>進貨單辨識工具</title>
+  <style>
+    body { font-family: sans-serif; padding: 2em; }
+    #status { white-space: pre-line; background: #f9f9f9; padding: 1em; border: 1px solid #ccc; height: 200px; overflow-y: scroll; }
+  </style>
 </head>
 <body>
   <h2>進貨單辨識 + 產出商品主檔</h2>
@@ -12,15 +17,26 @@
     <label>上傳商品資料_ALL.xlsx：<input type="file" name="excel" accept=".xlsx" required /></label><br>
     <button type="submit">開始辨識與匯出</button>
   </form>
-  <div id="status"></div>
+  <div id="status">尚未開始</div>
 
   <script>
+    function log(msg) {
+      const status = document.getElementById("status");
+      status.innerText += "\n" + msg;
+      status.scrollTop = status.scrollHeight;
+    }
+
     document.getElementById("upload-form").addEventListener("submit", async function (e) {
       e.preventDefault();
       const formData = new FormData(e.target);
-      document.getElementById("status").innerText = "⏳ 上傳中...";
+      const status = document.getElementById("status");
+      status.innerText = "⏳ 上傳中...";
+      log("📤 開始上傳圖片與商品檔...");
+
       const res = await fetch("/api/gpt-vision", { method: "POST", body: formData });
+
       if (res.ok) {
+        log("✅ GPT-4o 辨識完成，處理 Excel 中...");
         const blob = await res.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
@@ -29,10 +45,10 @@
         document.body.appendChild(a);
         a.click();
         a.remove();
-        document.getElementById("status").innerText = "✅ 完成並下載 Excel";
+        log("📥 匯出完成，可下載 Excel");
       } else {
         const result = await res.json();
-        document.getElementById("status").innerText = "❌ 錯誤：" + result.error;
+        log("❌ 錯誤：" + result.error);
       }
     });
   </script>
